@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch, nextTick } from "vue";
+import Sortable from "sortablejs";
 import Box from "./components/box.vue";
 import Variable from "./components/variable.vue";
 
@@ -10,8 +11,41 @@ const handleUpdateItems = (newItems) => {
 
 const isMenuOpen = ref(false);
 const toggleMenu = () => {
-  isMenuOpen = !isMenuOpen.value;
+  isMenuOpen.value = !isMenuOpen.value;
 };
+
+const handleAlert = (msg) => {
+  alert(msg);
+};
+
+const menuListRef=ref(null);
+let sortableInstance=null;
+
+const initSortable=()=>{
+  if (!menuListRef.value)return;
+sortableInstance= new Sortable(menuListRef.value,{
+  animation: 150, // 動く時のアニメーション（ミリ秒）
+    handle: ".drag-handle",
+    onEnd: (evt) => {
+      const movedItem = items.value.splice(evt.oldIndex, 1)[0];
+      items.value.splice(evt.newIndex, 0, movedItem);
+    },
+})
+}
+
+
+watch(isMenuOpen,async(open)=>{
+  if(open){
+  await nextTick();
+  initSortable();
+  }else{
+    if(sortableInstance){
+      sortableInstance.destroy();
+    }
+  }
+
+
+});
 </script>
 <template>
   <div class="container">
@@ -22,60 +56,65 @@ const toggleMenu = () => {
         <li><button @click="alert('機能1')">設定</button></li>
         <li><button @click="alert('機能2')">データリセット</button></li>
         <li><button @click="alert('機能3')">ヘルプ</button></li>
+        <p>チェック項目追加</p>
+        <li>          <Variable @update-items="handleUpdateItems" /></li>
+      </ul>
+        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;" />
+      
+      <h3>並び替え</h3>
+      <ul ref="menuListRef" class="sortable-list">
+        <li v-for="item in items" :key="item" class="sortable-item">
+          <span class="drag-handle">☰</span> <span class="item-text">{{ item }}</span>
+        </li>
       </ul>
     </div>
     <h1>戸締まり・火の元チェック</h1>
     <div class="boxspace">
-      <Variable @update-items="handleUpdateItems" />
-
+    
       <Box v-for="item in items" :key="item" :msg="item" />
     </div>
   </div>
 </template>
 <style>
-/* 🔵 3. 丸いボタンを右上に固定するCSS */
+/* --- 既存のスタイルはそのまま --- */
 .circle-btn {
-  position: fixed; /* 画面に対して絶対配置 */
-  top: 20px; /* 上から20pxの位置 */
-  right: 20px; /* 右から20pxの位置 */
-  width: 50px; /* 横幅 */
-  height: 50px; /* 縦幅を同じにすると正方形に */
-  border-radius: 50%; /* ★50%にすると完璧な「丸」になる */
-  background-color: #4fc08d; /* ボタンの色（Vueグリーン） */
-  color: white;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* ちょっと影をつけて立体的に */
-  z-index: 100; /* 一番手前に表示されるようにする */
+  position: fixed; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%;
+  background-color: #4fc08d; color: white; border: none; font-size: 20px; cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 100;
 }
-
-/* 🔵 4. 飛び出すメニューのCSS */
 .floating-menu {
-  position: fixed; /* これも画面に対して固定 */
-  top: 80px; /* ボタンの下あたりに出るように調整 */
-  right: 20px;
-  background: white;
-  border: 1px solid #ccc;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 99; /* ボタンの少し下のレイヤー */
+  position: fixed; top: 80px; right: 20px; background: white; color: #2c3e50;
+  border: 1px solid #ccc; padding: 15px; border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 99; max-height: 80vh; overflow-y: auto;
 }
+.floating-menu ul { list-style: none; padding: 0; margin: 0; }
+.floating-menu li { margin: 10px 0; }
+.container { display: grid; align-content: start; min-height: 100vh; padding: 20px; }
 
-.floating-menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+/* 👇 追加した並び替えリスト用のスタイル */
+.sortable-list {
+  margin-top: 10px;
 }
-
-.floating-menu li {
-  margin: 10px 0;
+.sortable-item {
+  display: flex;
+  align-items: center;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  margin-bottom: 6px !important;
+  border-radius: 4px;
+  cursor: grab;
 }
-.container {
-  display: grid;
-  align-content: start; /* ★これで中身が全部上へギュッと詰まります */
-  min-height: 100vh; /* 画面全体の高さを確保する場合（お好みで） */
-  padding: 20px; /* 画面の端にくっつきすぎないように余白をプラス */
+.sortable-item:active {
+  cursor: grabbing;
+}
+.drag-handle {
+  margin-right: 10px;
+  color: #999;
+  font-weight: bold;
+  user-select: none;
+}
+.item-text {
+  flex-grow: 1;
 }
 </style>

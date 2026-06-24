@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "sortablejs": "^1.15.7",
     "vue": "^3.5.38"
   },
   "devDependencies": {
