@@ -2,16 +2,31 @@
 import { ref } from "vue";
 
 // 親から渡される項目名（msg）を受け取る
-defineProps(["msg"]);
+const props = defineProps(["msg"]);
+
+const emit = defineEmits(["checked"]);
 
 // 💡 追加ポイント①：このボタンが押されているかを覚える変数（最初は false = 押されてない）
 const isChecked = ref(false);
+
+const handleCheckboxChange = () => {
+  // チェックが入った（trueになった）ときだけ親に通知する場合
+  if (isChecked.value) {
+    emit("checked", props.msg);
+  }
+  // ※もし「チェックを外した時のログ」も取りたい場合は、ifを外して常に emit してもOKです！
+};
 </script>
 
 <template>
   <div class="box" :class="{ done: isChecked }">
     <label class="box-label">
-      <input type="checkbox" v-model="isChecked" class="checkbox" />
+     <input 
+        type="checkbox" 
+        v-model="isChecked" 
+        @change="handleCheckboxChange"
+        class="checkbox" 
+      />
 
       <span class="text">{{ msg }}</span>
     </label>

@@ -5,8 +5,16 @@ import Box from "./components/box.vue";
 import Variable from "./components/variable.vue";
 
 const items = ref([]);
+const logs = ref([]);
 const handleUpdateItems = (newItems) => {
   items.value = newItems;
+};
+
+
+const handleBoxClick = (itemName) => {
+  const time = new Date().toLocaleTimeString();
+  // unshiftを使うことで、新しいログが一番上に表示されます
+  logs.value.unshift(`${time} - [${itemName}] がチェックされました`); 
 };
 
 const isMenuOpen = ref(false);
@@ -68,10 +76,23 @@ watch(isMenuOpen,async(open)=>{
         </li>
       </ul>
     </div>
-    <h1>戸締まり・火の元チェック</h1>
+   <h1>戸締まり・火の元チェック</h1>
     <div class="boxspace">
-    
-      <Box v-for="item in items" :key="item" :msg="item" />
+      <!-- 3. @checked イベントをキャッチできるように変更 -->
+      <Box 
+        v-for="item in items" 
+        :key="item" 
+        :msg="item" 
+        @checked="handleBoxClick" 
+      />
+    </div>
+
+    <!-- 4. ログ表示用のエリアを追加（ログがあるときだけ表示） -->
+    <div v-if="logs.length > 0" class="log-container">
+      <h3>操作ログ</h3>
+      <ul>
+        <li v-for="(log, index) in logs" :key="index">{{ log }}</li>
+      </ul>
     </div>
   </div>
 </template>
