@@ -40,7 +40,10 @@ sortableInstance= new Sortable(menuListRef.value,{
     },
 })
 }
-
+//boxを消す
+const handleRemoveItem = (index) => {
+  items.value.splice(index, 1);
+};
 
 watch(isMenuOpen,async(open)=>{
   if(open){
@@ -71,33 +74,64 @@ watch(isMenuOpen,async(open)=>{
       
       <h3>並び替え</h3>
       <ul ref="menuListRef" class="sortable-list">
-        <li v-for="item in items" :key="item" class="sortable-item">
+        <li v-for="(item,index) in items" :key="item" class="sortable-item">
           <span class="drag-handle">☰</span> <span class="item-text">{{ item }}</span>
+          <button class="delete-btn" @click="handleRemoveItem(index)">✕</button>
         </li>
+        
+      </ul>
+      <div v-if="logs.length > 0" class="log-container">
+✕
+      <h3>操作ログ</h3>
+      <ul>
+        <li v-for="(log, index) in logs" :key="index">{{ log }}</li>
       </ul>
     </div>
+    </div>
    <h1>戸締まり・火の元チェック</h1>
-    <div class="boxspace">
+    <div class="boxspace" :class="`box-count-${items.length}`">
       <!-- 3. @checked イベントをキャッチできるように変更 -->
       <Box 
         v-for="item in items" 
         :key="item" 
         :msg="item" 
         @checked="handleBoxClick" 
+        @remove="handleRemoveItem(index)"
       />
     </div>
 
     <!-- 4. ログ表示用のエリアを追加（ログがあるときだけ表示） -->
-    <div v-if="logs.length > 0" class="log-container">
-      <h3>操作ログ</h3>
-      <ul>
-        <li v-for="(log, index) in logs" :key="index">{{ log }}</li>
-      </ul>
-    </div>
   </div>
 </template>
 <style>
-/* --- 既存のスタイルはそのまま --- */
+.container { 
+  display: flex !important; 
+  flex-direction: column !important;
+  height: 100vh !important; /* 画面の高さを強制的に固定 */
+  padding: 20px; 
+  box-sizing: border-box;
+}
+
+.boxspace {
+  flex-grow: 1 !important; /* 残りの画面を全部使う */
+  display: grid !important;
+  grid-template-columns: 1fr !important; /* 横は1列 */
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  padding: 100px 0 !important;
+}
+
+/* 個数に応じて縦幅を等分（1fr）する指定 */
+.box-count-1 { grid-template-rows: 1fr !important; }
+.box-count-2 { grid-template-rows: repeat(2, 1fr) !important; }
+.box-count-3 { grid-template-rows: repeat(3, 1fr) !important; }
+
+.boxspace > * {
+  width: 100% !important;
+  height: 100% !important; /* 子要素を強制的に縦いっぱいに伸ばす */
+  display: block;
+}
 .circle-btn {
   position: fixed; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%;
   background-color: #4fc08d; color: white; border: none; font-size: 20px; cursor: pointer;

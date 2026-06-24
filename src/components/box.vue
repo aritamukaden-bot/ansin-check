@@ -1,75 +1,80 @@
 <script setup>
 import { ref } from "vue";
 
-// 親から渡される項目名（msg）を受け取る
 const props = defineProps(["msg"]);
-
 const emit = defineEmits(["checked"]);
-
-// 💡 追加ポイント①：このボタンが押されているかを覚える変数（最初は false = 押されてない）
 const isChecked = ref(false);
 
 const handleCheckboxChange = () => {
-  // チェックが入った（trueになった）ときだけ親に通知する場合
   if (isChecked.value) {
     emit("checked", props.msg);
   }
-  // ※もし「チェックを外した時のログ」も取りたい場合は、ifを外して常に emit してもOKです！
 };
 </script>
 
 <template>
   <div class="box" :class="{ done: isChecked }">
     <label class="box-label">
-     <input 
+      <input 
         type="checkbox" 
         v-model="isChecked" 
         @change="handleCheckboxChange"
         class="checkbox" 
       />
-
       <span class="text">{{ msg }}</span>
     </label>
   </div>
 </template>
 
 <style scoped>
-/* 💡 通常時の Box のデザイン */
-
 .box {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
-  border-left: 5px solid #42b883; /* 左側に緑の線をアクセントに */
-  padding: 15px;
-  margin: 10px 0;
-  border-radius: 6px;
-  transition: all 0.3s ease; /* 色が滑らかに変わるアニメーション */
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  
+  /* 👇 親のGridから指定されたサイズ（1fr）いっぱいに強制拡大 */
+  width: 100% !important;
+  height: 100% !important; 
+  margin: 0 !important; 
+  box-sizing: border-box;
+
+  /* 中身を真ん中に寄せる */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-/* 💡 チェックが入った（.done クラスがついた）ときのデザイン */
 .box.done {
-  background-color: #f58e5e; /* 薄い緑色に変更 */
-  border-color: #c3e6cb;
-  border-left-color: #28a745; /* 濃い緑色に */
+  background-color: #f58e5e; 
+  border-color: #f58e5e;
 }
 
-/* その他、見た目を整えるスタイル */
 .box-label {
   display: flex;
   align-items: center;
+  justify-content: center;
   cursor: pointer;
-  width: 100%;
+  width: 100% !important;
+  height: 100% !important; /* ラベル領域も縦いっぱいに広げる */
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .checkbox {
-  transform: scale(1.4); /* チェックボックスを少し大きく */
-  margin-right: 12px;
+  transform: scale(2); /* チェックボックスもかなり大きめに */
+  margin-right: 15px;
   cursor: pointer;
 }
 
 .text {
-  font-size: 18px;
+  font-size: 32px; /* 文字もデカくして押しやすく */
+  font-weight: bold;
   color: #333;
-  user-select: none; /* 文字がダブルクリックで選択されないように */
+  user-select: none;
+}
+
+.box.done .text {
+  color: #fff;
 }
 </style>
