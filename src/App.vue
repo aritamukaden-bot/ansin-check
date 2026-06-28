@@ -230,10 +230,10 @@ watch(isMenuOpen, async (open) => {
   flex-grow: 1;
 }
 @media screen and (max-width: 768px) {
-  /* 1. スマホだと100pxの余白は広すぎるので、上下の余白を少し縮めて押し込みを防止 */
+  /* 1. スマホだと上下100pxの余白は広すぎるので、少し縮めて画面に収まりやすく */
   .boxspace {
     padding: 60px 0 20px 0 !important;
-    gap: 15px; /* 隙間も少し狭くして画面に収まりやすく */
+    gap: 15px;
   }
 
   /* 2. 右上のメニューボタンをスマホでも押しやすいサイズ＆位置に調整 */
@@ -245,13 +245,14 @@ watch(isMenuOpen, async (open) => {
     font-size: 18px;
   }
 
-  /* 3. メニューが画面からはみ出さないように、スマホでは横幅いっぱいに広げる */
+  /* 3. 【重要】スマホではメニューを画面横幅いっぱいに広げる（スライドの動きはキープ） */
   .floating-menu {
-    top: 70px;
-    right: 15px;
-    left: 15px; /* 左側にも余白を作って画面幅に合わせる */
-    max-height: 75vh;
-    padding: 12px;
+    width: 100vw;       /* 横幅を画面ぴったりにする */
+    right: -100vw;      /* 隠すときも画面の外（右側）へ */
+    padding-top: 70px;  /* スマホのボタン位置に合わせて上の余白を調整 */
+  }
+  .floating-menu.is-open {
+    right: 0;
   }
 
   /* 4. タイトル文字が大きすぎて2行に崩れるのを防ぐ */
