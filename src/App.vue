@@ -36,8 +36,9 @@ const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
 
-const handleAlert = (msg) => {
-  alert(msg);
+const isHelpOpen = ref(false);
+const resetdata = () => {
+  items.value = [];
 };
 
 const menuListRef = ref(null);
@@ -73,12 +74,16 @@ watch(isMenuOpen, async (open) => {
 <template>
   <div class="container">
     <button class="circle-btn" @click="toggleMenu">⚙️</button>
-    <div v-if="isMenuOpen" class="floating-menu">
+    <div class="floating-menu" :class="{ 'is-open': isMenuOpen }">
+      <div v-if="isHelpOpen">
+        <button @click="isHelpOpen = false">← メニューに戻る</button>
+        <h3>ヘルプ</h3>
+        <p>ここに使い方の説明文を自由に書きます。</p>
+      </div>
       <h3>メニュー</h3>
       <ul>
-        <li><button @click="alert('機能1')">設定</button></li>
-        <li><button @click="alert('機能2')">データリセット</button></li>
-        <li><button @click="alert('機能3')">ヘルプ</button></li>
+        <li><button @click="resetdata">データリセット</button></li>
+        <li><button @click="isHelpOpen = true">ヘルプ</button></li>
         <p>チェック項目追加</p>
         <li><Variable @update-items="handleUpdateItems" /></li>
       </ul>
@@ -111,8 +116,6 @@ watch(isMenuOpen, async (open) => {
         @remove="handleRemoveItem(index)"
       />
     </div>
-
-    <!-- 4. ログ表示用のエリアを追加（ログがあるときだけ表示） -->
   </div>
 </template>
 <style>
@@ -164,20 +167,26 @@ watch(isMenuOpen, async (open) => {
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 100;
+  z-index: 101;
 }
 .floating-menu {
   position: fixed;
-  top: 80px;
-  right: 20px;
+  top: 0;
+  right: 0; /* 画面の右端にピッタリつける */
+  width: 350px; /* 横幅を決める */
+  height: 100vh; /* 高さを画面いっぱいに */
   background: white;
   color: #2c3e50;
-  border: 1px solid #ccc;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 99;
-  max-height: 80vh;
-  overflow-y: auto;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15); /* 左側にだけ影をつける */
+  z-index: 100;
+  padding: 80px 20px 20px 20px; /* ⚙️ボタンと被らないように上の余白を多めにする */
+  box-sizing: border-box;
+  overflow-y: auto; /* 中身が増えたらスクロールできるように */
+  right: -350px; /* 最初は画面の外に隠す */
+  transition: right 0.3s ease; /* 右側の位置が変わるときにアニメーションさせる */
+}
+.floating-menu.is-open {
+  right: 0;
 }
 .floating-menu ul {
   list-style: none;
