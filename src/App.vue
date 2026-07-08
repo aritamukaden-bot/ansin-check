@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick } from "vue";
+import { ref, watch, nextTick, onMounted } from "vue";
 import Sortable from "sortablejs";
 import Box from "./components/box.vue";
 import Variable from "./components/variable.vue";
@@ -7,10 +7,12 @@ import Variable from "./components/variable.vue";
 // 1. ローカルストレージ用のキー名を決める
 const STORAGE_KEY = "lock-check-items";
 
+const VISIT_KEY = "lock-check-first-visit";
 // 2. 初期化：ローカルストレージにデータがあればそれを使い、なければ空の配列 [] を使う
 const savedItems = localStorage.getItem(STORAGE_KEY);
 const items = ref(savedItems ? JSON.parse(savedItems) : []);
 
+const showWelcomeNotice = ref(false);
 // 3. items の中身を監視（watch）し、変更があったら自動でローカルストレージに保存する
 watch(
   items,
@@ -19,6 +21,20 @@ watch(
   },
   { deep: true }, // 💡重要：配列の中身の追加・削除・並び替えを検知するために deep: true が必要です
 );
+
+onMounted(() => {
+  const hasVisited = localStorage.getItem(VISIT_KEY);
+  if (!hasVisited) {
+    // 初めての訪問の場合
+    showWelcomeNotice.value = true;
+    // メニューを自動的に開いて設定を見せる
+    isMenuOpen.value = true;
+    isHelpOpen.value = true; // 最初からヘルプを開いた状態にする
+
+    // 訪問済みフラグを保存
+    localStorage.setItem(VISIT_KEY, "true");
+  }
+});
 
 const logs = ref([]);
 const handleUpdateItems = (newItems) => {
@@ -39,6 +55,16 @@ const toggleMenu = () => {
 const isHelpOpen = ref(false);
 
 const resetCounter = ref(0);
+
+const boxResetCounter = ref(0);
+
+// すべてのチェックを一気に外す関数を追加
+const clearAllChecks = () => {
+  boxResetCounter.value++;
+  // ログにもクリアしたことを記録したい場合は以下を追加
+  const time = new Date().toLocaleTimeString();
+  logs.value.unshift(`${time} - [すべてのチェック] が外されました`);
+};
 
 const resetdata = () => {
   items.value = [];
@@ -77,43 +103,92 @@ watch(isMenuOpen, async (open) => {
 </script>
 <template>
   <div class="container">
-    <button class="circle-btn" @click="toggleMenu">⚙️</button>
-    <div class="floating-menu" :class="{ 'is-open': isMenuOpen }">
-      <div v-if="isHelpOpen">
-        <button @click="isHelpOpen = false">← メニューに戻る</button>
-        <h3>ヘルプ</h3>
-        <p>ここに使い方の説明文を自由に書きます。</p>
-      </div>
-      <h3>メニュー</h3>
-      <ul>
-        <li><button @click="resetdata">データリセット</button></li>
-        <li><button @click="isHelpOpen = true">ヘルプ</button></li>
-        <p>チェック項目追加</p>
-        <li>
-          <Variable :key="resetCounter" @update-items="handleUpdateItems" />
-        </li>
-      </ul>
-      <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc" />
+    <!-- 👇 初回訪問時にボタンの左側に表示される案内メッセージ -->
+    <div v-if="showWelcomeNotice" class="welcome-badge">
+      まずはここから項目を追加しましょう！ ➔
+    </div>
 
-      <h3>並び替え</h3>
-      <ul ref="menuListRef" class="sortable-list">
-        <li v-for="(item, index) in items" :key="item" class="sortable-item">
-          <span class="drag-handle">☰</span>
-          <span class="item-text">{{ item }}</span>
-          <button class="delete-btn" @click="handleRemoveItem(index)">✕</button>
-        </li>
-      </ul>
-      <div v-if="logs.length > 0" class="log-container">
-        ✕
-        <h3>操作ログ</h3>
+    <button class="circle-btn" @click="toggleMenu">⚙️</button>
+
+    <div class="floating-menu" :class="{ 'is-open': isMenuOpen }">
+      <!-- 👇 ヘルプ画面の中身 -->
+      <div v-if="isHelpOpen" class="help-content">
+        <button class="back-btn" @click="isHelpOpen = false">
+          ← メニューに戻る
+        </button>
+        <h3>🔰 つかいかた</h3>
+        <p>
+          このアプリは、お出かけ前の「戸締まり」や「火の元」を忘れないようにチェックするツールです。
+        </p>
+
+        <h4>1. 項目を追加する</h4>
+        <p>
+          メニュー内の「チェック項目追加」から、あなたが毎日チェックしたい場所（例：玄関の鍵、ガスの元栓、エアコンなど）を入力して追加してください。
+        </p>
+
+        <h4>2. 並び替える・削除する</h4>
+        <p>
+          「並び替え」エリアの ☰
+          をドラッグすると順番を変えられます。いらなくなった項目は ✕
+          で消去できます。
+        </p>
+
+        <h4>3. 毎日チェックする</h4>
+        <p>
+          設定が終わったらメニューを閉じます。画面に大きなボタンができるので、確認した場所をタップしてチェックしていきましょう！
+        </p>
+        <hr style="margin: 15px 0; border: 0; border-top: 1px dashed #ccc" />
+      </div>
+
+      <!-- 👇 通常のメニュー中身 -->
+      <div v-else>
+        <h3>メニュー</h3>
         <ul>
-          <li v-for="(log, index) in logs" :key="index">{{ log }}</li>
+          <!-- 💡ここに「すべてのチェックを外す」ボタンを追加（項目があるときだけ表示） -->
+          <li v-if="items.length > 0">
+            <button @click="clearAllChecks" class="menu-btn clear-all">
+              すべてのチェックを外す
+            </button>
+          </li>
+          <li>
+            <button @click="resetdata" class="menu-btn reset">
+              データリセット
+            </button>
+          </li>
+          <li>
+            <button @click="isHelpOpen = true" class="menu-btn">
+              使い方ヘルプを見る
+            </button>
+          </li>
+          <p class="menu-title">➕ チェック項目追加</p>
+          <li>
+            <Variable :key="resetCounter" @update-items="handleUpdateItems" />
+          </li>
         </ul>
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc" />
+
+        <h3>並び替え</h3>
+        <ul ref="menuListRef" class="sortable-list">
+          <li v-for="(item, index) in items" :key="item" class="sortable-item">
+            <span class="drag-handle">☰</span>
+            <span class="item-text">{{ item }}</span>
+            <button class="delete-btn" @click="handleRemoveItem(index)">
+              ✕
+            </button>
+          </li>
+        </ul>
+
+        <div v-if="logs.length > 0" class="log-container">
+          <h3>操作ログ</h3>
+          <ul>
+            <li v-for="(log, index) in logs" :key="index">{{ log }}</li>
+          </ul>
+        </div>
       </div>
     </div>
+
     <h1>戸締まり・火の元チェック</h1>
     <div class="boxspace" :class="`box-count-${items.length}`">
-      <!-- 3. @checked イベントをキャッチできるように変更 -->
       <Box
         v-for="(item, index) in items"
         :key="item"
@@ -121,6 +196,11 @@ watch(isMenuOpen, async (open) => {
         @checked="handleBoxClick"
         @remove="handleRemoveItem(index)"
       />
+      <!-- まだ項目がないときの寂しさを埋める案内文 -->
+      <div v-if="items.length === 0" class="empty-state">
+        <p>現在チェック項目がありません。</p>
+        <p>右上の ⚙️ ボタンから項目を追加してください！</p>
+      </div>
     </div>
   </div>
 </template>
@@ -209,7 +289,7 @@ watch(isMenuOpen, async (open) => {
   padding: 20px;
 }
 
-/* 👇 追加した並び替えリスト用のスタイル */
+/* 並び替えリスト用のスタイル */
 .sortable-list {
   margin-top: 10px;
 }
@@ -235,6 +315,115 @@ watch(isMenuOpen, async (open) => {
 .item-text {
   flex-grow: 1;
 }
+
+/* 👇 新しく追加するスタイル */
+.welcome-badge {
+  position: fixed;
+  top: 25px;
+  right: 85px; /* ⚙️ボタンの左側に配置 */
+  background-color: #ff9800;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 102;
+  animation: bounce 2s infinite; /* ピコピコ動かすアニメーション */
+}
+
+/* 吹き出しの三角矢印 */
+.welcome-badge::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  margin-top: -6px;
+  border-width: 6px 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent transparent #ff9800;
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateX(0);
+  }
+  40% {
+    transform: translateX(-8px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+}
+
+.help-content h4 {
+  margin: 15px 0 5px 0;
+  color: #4fc08d;
+}
+.help-content p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 10px 0;
+}
+.back-btn {
+  background: #eee;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+.empty-state {
+  text-align: center;
+  color: #7f8c8d;
+  padding-top: 40px;
+  font-size: 16px;
+  grid-column: 1 / -1;
+}
+.menu-btn {
+  width: 100%;
+  padding: 8px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+.menu-btn.reset {
+  background: #fff0f0;
+  border-color: #fcc;
+  color: #c0392b;
+}
+.menu-title {
+  font-weight: bold;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+.menu-btn.clear-all {
+  background: #e8f4fd;
+  border-color: #bbeeec;
+  color: #2980b9;
+  font-weight: bold;
+}
+.menu-btn.clear-all:active {
+  background: #d4ebfd;
+}
+
+/* スマホ用の位置微調整 */
+@media screen and (max-width: 768px) {
+  .welcome-badge {
+    top: 20px;
+    right: 70px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
 @media screen and (max-width: 768px) {
   /* 1. スマホだと上下100pxの余白は広すぎるので、少し縮めて画面に収まりやすく */
   .boxspace {
@@ -253,9 +442,9 @@ watch(isMenuOpen, async (open) => {
 
   /* 3. 【重要】スマホではメニューを画面横幅いっぱいに広げる（スライドの動きはキープ） */
   .floating-menu {
-    width: 100vw;       /* 横幅を画面ぴったりにする */
-    right: -100vw;      /* 隠すときも画面の外（右側）へ */
-    padding-top: 70px;  /* スマホのボタン位置に合わせて上の余白を調整 */
+    width: 100vw; /* 横幅を画面ぴったりにする */
+    right: -100vw; /* 隠すときも画面の外（右側）へ */
+    padding-top: 70px; /* スマホのボタン位置に合わせて上の余白を調整 */
   }
   .floating-menu.is-open {
     right: 0;
