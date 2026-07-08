@@ -106,7 +106,6 @@ watch(isMenuOpen, async (open) => {
 </script>
 <template>
   <div class="container">
-    <!-- 👇 初回訪問時にボタンの左側に表示される案内メッセージ -->
     <div v-if="showWelcomeNotice" class="welcome-badge">
       まずはここから項目を追加しましょう！ ➔
     </div>
@@ -114,7 +113,6 @@ watch(isMenuOpen, async (open) => {
     <button class="circle-btn" @click="toggleMenu">⚙️</button>
 
     <div class="floating-menu" :class="{ 'is-open': isMenuOpen }">
-      <!-- 👇 ヘルプ画面の中身 -->
       <div v-if="isHelpOpen" class="help-content">
         <button class="back-btn" @click="isHelpOpen = false">
           ← メニューに戻る
@@ -143,11 +141,9 @@ watch(isMenuOpen, async (open) => {
         <hr style="margin: 15px 0; border: 0; border-top: 1px dashed #ccc" />
       </div>
 
-      <!-- 👇 通常のメニュー中身 -->
       <div v-else>
         <h3>メニュー</h3>
         <ul>
-          <!-- 💡ここに「すべてのチェックを外す」ボタンを追加（項目があるときだけ表示） -->
           <li v-if="items.length > 0">
             <button @click="clearAllChecks" class="menu-btn clear-all">
               すべてのチェックを外す
@@ -191,15 +187,19 @@ watch(isMenuOpen, async (open) => {
     </div>
 
     <h1>戸締まり・火の元チェック</h1>
-    <div class="boxspace" :class="`box-count-${items.length}`">
+    <div
+      class="boxspace"
+      :class="
+        items.length >= 5 ? 'box-count-5plus' : `box-count-${items.length}`
+      "
+    >
       <Box
         v-for="(item, index) in items"
-        :key="item"
+        :key="item + boxResetCounter"
         :msg="item"
         @checked="handleBoxClick"
         @remove="handleRemoveItem(index)"
       />
-      <!-- まだ項目がないときの寂しさを埋める案内文 -->
       <div v-if="items.length === 0" class="empty-state">
         <p>現在チェック項目がありません。</p>
         <p>右上の ⚙️ ボタンから項目を追加してください！</p>
@@ -219,7 +219,6 @@ watch(isMenuOpen, async (open) => {
 .boxspace {
   flex-grow: 1 !important; /* 残りの画面を全部使う */
   display: grid !important;
-  grid-template-columns: 1fr !important; /* 横は1列 */
   gap: 20px;
   width: 100%;
   height: 100%;
@@ -236,12 +235,29 @@ watch(isMenuOpen, async (open) => {
 .box-count-3 {
   grid-template-rows: repeat(3, 1fr) !important;
 }
+.box-count-4 {
+  grid-template-columns: 1fr !important;
+  grid-template-rows: repeat(4, 1fr) !important;
+}
+/* 💡 grid-auto-rows を max-content に修正 */
+.box-count-5plus {
+  grid-template-columns: repeat(2, 1fr) !important;
+  grid-auto-rows: max-content !important;
+}
 
+/* 💡 height: auto !important; を追加して縦の潰れを防ぐ */
+.box-count-5plus > * {
+  min-height: 120px; /* ボタンが潰れないように最低限の高さを確保 */
+  height: auto !important;
+}
+
+/* 💡 height: 100% から auto !important に修正 */
 .boxspace > * {
   width: 100% !important;
-  height: 100% !important; /* 子要素を強制的に縦いっぱいに伸ばす */
+  height: auto !important;
   display: block;
 }
+
 .circle-btn {
   position: fixed;
   top: 20px;
@@ -255,13 +271,11 @@ watch(isMenuOpen, async (open) => {
   font-size: 20px;
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 100;
   z-index: 101;
 }
 .floating-menu {
   position: fixed;
   top: 0;
-  right: 0; /* 画面の右端にピッタリつける */
   width: 350px; /* 横幅を決める */
   height: 100vh; /* 高さを画面いっぱいに */
   background: white;
@@ -319,7 +333,7 @@ watch(isMenuOpen, async (open) => {
   flex-grow: 1;
 }
 
-/* 👇 新しく追加するスタイル */
+/* 新しく追加するスタイル */
 .welcome-badge {
   position: fixed;
   top: 25px;
@@ -427,14 +441,30 @@ watch(isMenuOpen, async (open) => {
   }
 }
 
+/* スマホ用レスポンシブスタイルまとめ */
 @media screen and (max-width: 768px) {
-  /* 1. スマホだと上下100pxの余白は広すぎるので、少し縮めて画面に収まりやすく */
+  /* 1. 上下の余白と隙間の調整 */
   .boxspace {
-    padding: 60px 0 20px 0 !important;
-    gap: 15px;
+    padding: 70px 0 20px 0 !important; /* タイトルと被らないよう上を少し広めに */
+    gap: 12px !important;
   }
 
-  /* 2. 右上のメニューボタンをスマホでも押しやすいサイズ＆位置に調整 */
+  /* 2. スマホかつ5つ以上のときの設定 */
+  .box-count-5plus :deep(.text) {
+    font-size: 20px !important; /* 文字を適度に小さく */
+    display: inline-block !important; /* 改行を正常に効かせる */
+    white-space: normal !important; /* 自動改行を許可 */
+    word-break: break-all !important; /* 端で折る */
+    line-height: 1.3 !important;
+  }
+
+  /* 3. 箱の高さが潰れて重なるのを絶対に防ぐ指定 */
+  .box-count-5plus > * {
+    min-height: 90px !important; /* 最低限の押しやすさを確保 */
+    height: auto !important; /* 文字が多いときは自動で下に伸びるようにする */
+  }
+
+  /* 4. 右上のメニューボタンの調整 */
   .circle-btn {
     top: 15px;
     right: 15px;
@@ -443,22 +473,24 @@ watch(isMenuOpen, async (open) => {
     font-size: 18px;
   }
 
-  /* 3. 【重要】スマホではメニューを画面横幅いっぱいに広げる（スライドの動きはキープ） */
+  /* 5. スマホではメニューを画面横幅いっぱいに */
   .floating-menu {
-    width: 100vw; /* 横幅を画面ぴったりにする */
-    right: -100vw; /* 隠すときも画面の外（右側）へ */
-    padding-top: 70px; /* スマホのボタン位置に合わせて上の余白を調整 */
+    width: 100vw;
+    right: -100vw;
+    padding-top: 70px;
   }
   .floating-menu.is-open {
     right: 0;
   }
 
-  /* 4. タイトル文字が大きすぎて2行に崩れるのを防ぐ */
+  /* 6. タイトル文字の調整 */
   h1 {
-    font-size: 1.5rem;
+    font-size: 1.15rem !important;
+    letter-spacing: -0.5px;
     margin-top: 0;
-    margin-bottom: 10px;
-    padding-right: 50px; /* ⚙️ボタンと被らないように右側にスペースを空ける */
+    margin-bottom: 5px;
+    padding-right: 55px;
+    white-space: nowrap;
   }
 }
 </style>

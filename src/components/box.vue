@@ -15,11 +15,11 @@ const handleCheckboxChange = () => {
 <template>
   <div class="box" :class="{ done: isChecked }">
     <label class="box-label">
-      <input 
-        type="checkbox" 
-        v-model="isChecked" 
+      <input
+        type="checkbox"
+        v-model="isChecked"
         @change="handleCheckboxChange"
-        class="checkbox" 
+        class="checkbox"
       />
       <span class="text">{{ msg }}</span>
     </label>
@@ -32,11 +32,11 @@ const handleCheckboxChange = () => {
   border: 1px solid #ddd;
   border-radius: 12px;
   transition: all 0.3s ease;
-  
+
   /* 👇 親のGridから指定されたサイズ（1fr）いっぱいに強制拡大 */
   width: 100% !important;
-  height: 100% !important; 
-  margin: 0 !important; 
+  height: 100% !important;
+  margin: 0 !important;
   box-sizing: border-box;
 
   /* 中身を真ん中に寄せる */
@@ -46,7 +46,7 @@ const handleCheckboxChange = () => {
 }
 
 .box.done {
-  background-color: #f58e5e; 
+  background-color: #f58e5e;
   border-color: #f58e5e;
 }
 
@@ -72,6 +72,12 @@ const handleCheckboxChange = () => {
   font-weight: bold;
   color: #333;
   user-select: none;
+
+  /* 長文がはみ出さないための設定を追加 */
+  display: block; /* 改行の効きを良くする */
+  white-space: normal; /* 自動改行を許可 */
+  word-break: break-all; /* 枠の右端で綺麗に折る */
+  line-height: 1.3; /* 改行されたときに文字が重ならないよう行間を調整 */
 }
 
 .box.done .text {
