@@ -37,8 +37,12 @@ const toggleMenu = () => {
 };
 
 const isHelpOpen = ref(false);
+
+const resetCounter = ref(0);
+
 const resetdata = () => {
   items.value = [];
+  resetCounter.value++;
 };
 
 const menuListRef = ref(null);
@@ -85,7 +89,9 @@ watch(isMenuOpen, async (open) => {
         <li><button @click="resetdata">データリセット</button></li>
         <li><button @click="isHelpOpen = true">ヘルプ</button></li>
         <p>チェック項目追加</p>
-        <li><Variable @update-items="handleUpdateItems" /></li>
+        <li>
+          <Variable :key="resetCounter" @update-items="handleUpdateItems" />
+        </li>
       </ul>
       <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc" />
 
