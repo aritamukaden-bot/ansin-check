@@ -50,6 +50,9 @@ const handleBoxClick = (itemName) => {
 const isMenuOpen = ref(false);
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
+  if (isMenuOpen.value) {
+    showWelcomeNotice.value = false;
+  }
 };
 
 const isHelpOpen = ref(false);
