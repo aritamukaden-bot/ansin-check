@@ -186,7 +186,7 @@ watch(isMenuOpen, async (open) => {
       </div>
     </div>
 
-    <h1>戸締まり・火の元チェック</h1>
+    <h1>あんしんチェック</h1>
     <div
       class="boxspace"
       :class="
