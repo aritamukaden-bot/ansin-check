@@ -12,7 +12,6 @@ const VISIT_KEY = "lock-check-first-visit";
 const savedItems = localStorage.getItem(STORAGE_KEY);
 const items = ref(savedItems ? JSON.parse(savedItems) : []);
 
-const showWelcomeNotice = ref(false);
 // 3. items の中身を監視（watch）し、変更があったら自動でローカルストレージに保存する
 watch(
   items,
@@ -50,9 +49,6 @@ const handleBoxClick = (itemName) => {
 const isMenuOpen = ref(false);
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
-  if (isMenuOpen.value) {
-    showWelcomeNotice.value = false;
-  }
 };
 
 const isHelpOpen = ref(false);
@@ -106,10 +102,6 @@ watch(isMenuOpen, async (open) => {
 </script>
 <template>
   <div class="container">
-    <div v-if="showWelcomeNotice" class="welcome-badge">
-      まずはここから項目を追加しましょう！ ➔
-    </div>
-
     <button class="circle-btn" @click="toggleMenu">⚙️</button>
 
     <div class="floating-menu" :class="{ 'is-open': isMenuOpen }">
@@ -333,50 +325,6 @@ watch(isMenuOpen, async (open) => {
   flex-grow: 1;
 }
 
-/* 新しく追加するスタイル */
-.welcome-badge {
-  position: fixed;
-  top: 25px;
-  right: 85px; /* ⚙️ボタンの左側に配置 */
-  background-color: #ff9800;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: bold;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  z-index: 102;
-  animation: bounce 2s infinite; /* ピコピコ動かすアニメーション */
-}
-
-/* 吹き出しの三角矢印 */
-.welcome-badge::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -6px;
-  margin-top: -6px;
-  border-width: 6px 0 6px 6px;
-  border-style: solid;
-  border-color: transparent transparent transparent #ff9800;
-}
-
-@keyframes bounce {
-  0%,
-  20%,
-  50%,
-  80%,
-  100% {
-    transform: translateX(0);
-  }
-  40% {
-    transform: translateX(-8px);
-  }
-  60% {
-    transform: translateX(-4px);
-  }
-}
-
 .help-content h4 {
   margin: 15px 0 5px 0;
   color: #4fc08d;
@@ -433,12 +381,6 @@ watch(isMenuOpen, async (open) => {
 
 /* スマホ用の位置微調整 */
 @media screen and (max-width: 768px) {
-  .welcome-badge {
-    top: 20px;
-    right: 70px;
-    font-size: 12px;
-    padding: 6px 10px;
-  }
 }
 
 /* スマホ用レスポンシブスタイルまとめ */
