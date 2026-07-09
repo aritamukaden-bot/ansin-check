@@ -12,6 +12,8 @@ const VISIT_KEY = "lock-check-first-visit";
 const savedItems = localStorage.getItem(STORAGE_KEY);
 const items = ref(savedItems ? JSON.parse(savedItems) : []);
 
+const showWelcomeNotice = ref(false);
+
 // 3. items の中身を監視（watch）し、変更があったら自動でローカルストレージに保存する
 watch(
   items,
@@ -153,7 +155,11 @@ watch(isMenuOpen, async (open) => {
           </li>
           <p class="menu-title">➕ チェック項目追加</p>
           <li>
-            <Variable :key="resetCounter" @update-items="handleUpdateItems" />
+            <Variable
+              :key="resetCounter"
+              :items="items"
+              @update-items="handleUpdateItems"
+            />
           </li>
         </ul>
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc" />
