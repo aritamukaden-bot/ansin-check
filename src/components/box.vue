@@ -1,23 +1,18 @@
 <script setup>
-import { ref } from "vue";
+const props = defineProps(["msg", "checked"]);
+const emit = defineEmits(["toggle"]);
 
-const props = defineProps(["msg"]);
-const emit = defineEmits(["checked"]);
-const isChecked = ref(false);
-
-const handleCheckboxChange = () => {
-  if (isChecked.value) {
-    emit("checked", props.msg);
-  }
+const handleCheckboxChange = (e) => {
+  emit("toggle", props.msg, e.target.checked);
 };
 </script>
 
 <template>
-  <div class="box" :class="{ done: isChecked }">
+  <div class="box" :class="{ done: checked }">
     <label class="box-label">
       <input
         type="checkbox"
-        v-model="isChecked"
+        :checked="checked"
         @change="handleCheckboxChange"
         class="checkbox"
       />

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick, onMounted } from "vue";
+import { ref, watch, nextTick, onMounted, onUnmounted } from "vue";
 import Sortable from "sortablejs";
 import Box from "./components/box.vue";
 import Variable from "./components/variable.vue";
@@ -14,6 +14,59 @@ const items = ref(savedItems ? JSON.parse(savedItems) : []);
 
 const showWelcomeNotice = ref(false);
 
+// チェック状態の保存（毎日午前3時にリセット）
+const CHECKED_KEY = "lock-check-checked";
+const RESET_HOUR = 3;
+
+// 直近の「午前3時」の時刻（ミリ秒）を返す
+const lastResetBoundary = (now = new Date()) => {
+  const d = new Date(now);
+  d.setHours(RESET_HOUR, 0, 0, 0);
+  if (d > now) d.setDate(d.getDate() - 1);
+  return d.getTime();
+};
+
+const loadChecked = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CHECKED_KEY));
+    if (saved && saved.boundary === lastResetBoundary()) {
+      return { checked: saved.checked || {}, logs: saved.logs || [] };
+    }
+  } catch (e) {
+    // 壊れたデータは無視
+  }
+  return { checked: {}, logs: [] };
+};
+
+const initial = loadChecked();
+const checkedMap = ref(initial.checked);
+const logs = ref(initial.logs);
+const boundary = ref(lastResetBoundary());
+
+const saveChecked = () => {
+  localStorage.setItem(
+    CHECKED_KEY,
+    JSON.stringify({
+      boundary: boundary.value,
+      checked: checkedMap.value,
+      logs: logs.value,
+    }),
+  );
+};
+watch([checkedMap, logs], saveChecked, { deep: true });
+
+// 午前3時を過ぎていたらリセット
+const resetIfNewDay = () => {
+  const b = lastResetBoundary();
+  if (b !== boundary.value) {
+    boundary.value = b;
+    checkedMap.value = {};
+    logs.value = [];
+    saveChecked();
+  }
+};
+let resetTimer = null;
+
 // 3. items の中身を監視（watch）し、変更があったら自動でローカルストレージに保存する
 watch(
   items,
@@ -24,6 +77,8 @@ watch(
 );
 
 onMounted(() => {
+  resetTimer = setInterval(resetIfNewDay, 30 * 1000);
+  document.addEventListener("visibilitychange", resetIfNewDay);
   const hasVisited = localStorage.getItem(VISIT_KEY);
   if (!hasVisited) {
     // 初めての訪問の場合
@@ -37,15 +92,24 @@ onMounted(() => {
   }
 });
 
-const logs = ref([]);
+onUnmounted(() => {
+  clearInterval(resetTimer);
+  document.removeEventListener("visibilitychange", resetIfNewDay);
+});
+
 const handleUpdateItems = (newItems) => {
   items.value = newItems;
 };
 
-const handleBoxClick = (itemName) => {
-  const time = new Date().toLocaleTimeString();
-  // unshiftを使うことで、新しいログが一番上に表示されます
-  logs.value.unshift(`${time} - [${itemName}] がチェックされました`);
+const handleToggle = (itemName, value) => {
+  if (value) {
+    checkedMap.value[itemName] = true;
+    const time = new Date().toLocaleTimeString();
+    // unshiftを使うことで、新しいログが一番上に表示されます
+    logs.value.unshift(`${time} - [${itemName}] がチェックされました`);
+  } else {
+    delete checkedMap.value[itemName];
+  }
 };
 
 const isMenuOpen = ref(false);
@@ -57,11 +121,9 @@ const isHelpOpen = ref(false);
 
 const resetCounter = ref(0);
 
-const boxResetCounter = ref(0);
-
 // すべてのチェックを一気に外す関数を追加
 const clearAllChecks = () => {
-  boxResetCounter.value++;
+  checkedMap.value = {};
   // ログにもクリアしたことを記録したい場合は以下を追加
   const time = new Date().toLocaleTimeString();
   logs.value.unshift(`${time} - [すべてのチェック] が外されました`);
@@ -69,6 +131,7 @@ const clearAllChecks = () => {
 
 const resetdata = () => {
   items.value = [];
+  checkedMap.value = {};
   resetCounter.value++;
 };
 
@@ -193,9 +256,10 @@ watch(isMenuOpen, async (open) => {
     >
       <Box
         v-for="(item, index) in items"
-        :key="item + boxResetCounter"
+        :key="item"
         :msg="item"
-        @checked="handleBoxClick"
+        :checked="!!checkedMap[item]"
+        @toggle="handleToggle"
         @remove="handleRemoveItem(index)"
       />
       <div v-if="items.length === 0" class="empty-state">
